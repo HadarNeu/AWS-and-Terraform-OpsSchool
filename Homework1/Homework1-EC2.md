@@ -4,7 +4,7 @@
 (I imported a User Data file as a data resource which I rendered as you can see in main.tf)
 1. User Data as a file- imported directly to the user_data configuration.
  ```sh
-"${file("user_data.sh")}"
+user_data = "${file("user_data.sh")}"
 ```
 2. User Data as text- written directly with EOF command.
 ```sh
