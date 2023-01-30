@@ -143,50 +143,29 @@ resource "aws_route_table_association" "public" {
 }
 
 
-//getting the key from local repository
-resource "tls_private_key" "ec2_private_key" {
+//generating a key pairv
+resource "tls_private_key" "ec2-key-pair" {
   algorithm = "RSA"
   rsa_bits  = 4096
-
-  provisioner "local-exec" {
-        command = "echo '${tls_private_key.ec2_private_key.private_key_pem}' > ~/.ssh/${var.key_name}.pem"
-    }
 }
-
-// Making the access of .pem key as a private
-resource "null_resource" "key-perm" {
-    depends_on = [
-        tls_private_key.ec2_private_key,
-    ]
-
-    provisioner "local-exec" {
-        command = "chmod 400 ~/.ssh/${var.key_name}.pem"
-    }
-}
-
-resource "aws_key_pair" "ec2_key_pairs" {
-  for_each   = aws_instance.id
-  key_name   = "${aws_instance.name}-${var.key_name}"
-  public_key = tls_private_key.ec2_public_key.public_key_openssh
-  tags = {
-    Name     = "${aws_instance.name}-${var.key_name}"
+  
+resource "aws_key_pair" "key_pair" {
+  # Create public "hadar-key" on EC2 instance!!
+  key_name   = var.key_name      
+  public_key = tls_private_key.ec2-key-pair.public_key_openssh
+  
+  # Create private "hadar-key.pem" on my computer!!
+  provisioner "local-exec" { 
+    command = "sudo echo '${tls_private_key.ec2-key-pair.private_key_pem}' > ~/.ssh/${var.key_name}.pem && sudo chmod 400 ~/.ssh/${var.key_name}.pem"
   }
 }
-
-# module "key_pair" {
-#   source = "terraform-aws-modules/key-pair/aws"
-
-#   key_name   = "Terraform_test1"
-#   public_key = tls_private_key.ec2_private_key.public_key_openssh
-# }
-
 
 
 resource "aws_security_group" "allow_ports" {
    name        = "allow_ssh_http"
    description = "Allow inbound SSH traffic and http from any IP"
    # TO DO configure vpc id from data recource
-#   vpc_id      = "${module.vpc.vpc_id}"
+   vpc_id      = "${aws_vpc.vpc.id}"
 
    #ssh access
    ingress {
@@ -221,8 +200,7 @@ resource "aws_security_group" "allow_ports" {
 resource "aws_security_group" "db_sg" {
    name        = "db_sg"
    description = "Allow inbound SSH traffic from anywhere and http from the vpc"
-   # TO DO configure vpc id from data recource
-#   vpc_id      = "${module.vpc.vpc_id}"
+   vpc_id      = "${aws_vpc.vpc.id}"
 
    #ssh access
    ingress {
@@ -230,7 +208,7 @@ resource "aws_security_group" "db_sg" {
        to_port     = 22
        protocol    = "tcp"
        # Restrict ingress to necessary IPs/ports.
-       cidr_blocks = aws_vpc.vpc.cidr_block
+       cidr_blocks = [aws_vpc.vpc.cidr_block]
    }
 
    # HTTP access
@@ -239,7 +217,7 @@ resource "aws_security_group" "db_sg" {
        to_port     = 80
        protocol    = "tcp"
        # Restrict ingress to necessary IPs/ports.
-       cidr_blocks = aws_vpc.vpc.cidr_block
+       cidr_blocks = [aws_vpc.vpc.cidr_block]
    }
 
    egress {
