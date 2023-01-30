@@ -7,11 +7,11 @@
 #TO DO cidr_block = “10.0.${(count.index + 1)}.0/24”
 
 variable "private_subnets" {
-  default = ["10.0.0.0/19", "10.0.32.0/19"]
+  default = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
 variable "public_subnets" {
-  default = ["10.0.64.0/19", "10.0.96.0/19"]
+  default = ["10.0.3.0/24", "10.0.4.0/24"]
 }
 
 variable "aws_region" {
@@ -20,7 +20,7 @@ variable "aws_region" {
 
 variable "aws_ami" {
     description = "aws linux"
-   default = "ami-0ceecbb0f30a902a6"
+   default = "ami-06e85d4c3149db26a"
 }
 
 variable "instance_type" {

@@ -1,7 +1,7 @@
-data "template_file" "user_data_file" {
-  template = "${file("05-user_data.sh")}"
+# data "template_file" "user_data_file" {
+#   template = "${file("05-user_data.sh")}"
 
-}
+# }
 
 resource "aws_instance" "webserver" {
    count = "${var.instance_count}"
@@ -10,9 +10,20 @@ resource "aws_instance" "webserver" {
    ami                    = "${var.aws_ami}"
    key_name               = "${aws_key_pair.key_pair.key_name}"
    vpc_security_group_ids = ["${aws_security_group.allow_ports.id}"]  
-   user_data                   = "${data.template_file.user_data_filet.rendered}"
    associate_public_ip_address = true
+   user_data =  <<EOF
+        #!/bin/bash
+        sudo yum update -y
+        sudo amazon-linux-extras install epel -y
+        sudo amazon-linux-extras install nginx1 -y
+        sudo chmod o+w /usr/share/nginx/html/index.html 
+        sudo echo "<h1>Welcome to Grandpa's Whiskey</h1>" > /usr/share/nginx/html/index.html
+        sudo systemctl enable nginx
+        sudo systemctl start nginx
+        sudo systemctl start sshd
+    EOF
 #   user_data = "${file("05-user_data.sh")}"
+#user_data                   = "${data.template_file.user_data_file.rendered}"
   
    tags = {
        Name = "'Webserver'-EC2-${count.index+1}"

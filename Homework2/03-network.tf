@@ -31,7 +31,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.vpc.id
 
   tags = {
-    "Name" = "Private_subnet_${regex(".$", data.aws_availability_zones.available.names[count.index])}_${aws_vpc.vpc.id}"
+    "Name" = "Public_subnet_${regex(".$", data.aws_availability_zones.available.names[count.index])}_${aws_vpc.vpc.id}"
   }
 }
 
@@ -156,8 +156,9 @@ resource "aws_key_pair" "key_pair" {
   
   # Create private "hadar-key.pem" on my computer!!
   provisioner "local-exec" { 
-    command = "sudo echo '${tls_private_key.ec2-key-pair.private_key_pem}' > ~/.ssh/${var.key_name}.pem && sudo chmod 400 ~/.ssh/${var.key_name}.pem"
+    command = "echo '${tls_private_key.ec2-key-pair.private_key_pem}' > ~/.ssh/${var.key_name}.pem && sudo chmod 400 ~/.ssh/${var.key_name}.pem"
   }
+  
 }
 
 
