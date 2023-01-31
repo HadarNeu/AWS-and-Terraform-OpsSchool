@@ -78,24 +78,10 @@ resource "aws_route_table" "private" {
   count = 2
   vpc_id = aws_vpc.vpc.id
 
-  route = [
-      {
-      cidr_block                 = "0.0.0.0/0"
-      nat_gateway_id             = aws_nat_gateway.nat[count.index].id
-      carrier_gateway_id         = ""
-      destination_prefix_list_id = ""
-      egress_only_gateway_id     = ""
-      gateway_id                 = ""
-      instance_id                = ""
-      ipv6_cidr_block            = ""
-      local_gateway_id           = ""
-      network_interface_id       = ""
-      transit_gateway_id         = ""
-      vpc_endpoint_id            = ""
-      vpc_peering_connection_id  = ""
-    },
-  ]
-  
+    route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat[count.index].id
+  }
 
   tags = {
     Name = "private"
@@ -107,23 +93,10 @@ resource "aws_route_table" "public" {
   depends_on = [aws_vpc.vpc]
   vpc_id = aws_vpc.vpc.id
 
-  route = [
-     {
-      cidr_block                 = "0.0.0.0/0"
-      gateway_id                 = aws_internet_gateway.igw.id
-      carrier_gateway_id         = ""
-      destination_prefix_list_id = ""
-      egress_only_gateway_id     = ""
-      gateway_id                 = ""
-      instance_id                = ""
-      ipv6_cidr_block            = ""
-      local_gateway_id           = ""
-      network_interface_id       = ""
-      transit_gateway_id         = ""
-      vpc_endpoint_id            = ""
-      vpc_peering_connection_id  = ""
-      },
-    ]
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
   
 
   tags = {
@@ -181,41 +154,41 @@ resource "aws_security_group" "allow_ports" {
        cidr_blocks = ["0.0.0.0/0"]
    }
 
-   # HTTP access
-   ingress {
-       from_port   = 80
-       to_port     = 80
-       protocol    = "tcp"
-       # Restrict ingress to necessary IPs/ports.
-       cidr_blocks = ["0.0.0.0/0"]
-   }
+  # HTTP access
+  ingress {
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      # Restrict ingress to necessary IPs/ports.
+      cidr_blocks = ["0.0.0.0/0"]
+  }
    
-   # ingress from ALB traffic
-   ingress {
-       from_port   = 8080
-       to_port     = 8080
-       protocol    = "tcp"
-       # Restrict ingress to necessary IPs/ports.
-       security_groups = aws_security_group.alb_sg.id
-       #cidr_blocks = ["0.0.0.0/0"]
-   }
+  # # ingress from ALB traffic
+  # ingress {
+  #     from_port   = 8080
+  #     to_port     = 8080
+  #     protocol    = "tcp"
+  #     # Restrict ingress to necessary IPs/ports.
+  #     security_groups = aws_security_group.alb_sg.id
+  #     #cidr_blocks = ["0.0.0.0/0"]
+  # }
    
-      # Health check from ALB 
-   ingress {
-       from_port   = 8081
-       to_port     = 8081
-       protocol    = "tcp"
-       # Restrict ingress to necessary IPs/ports.
-       security_groups = aws_security_group.alb_sg.id
-       #cidr_blocks = ["0.0.0.0/0"]
-   }
+  #     # Health check from ALB 
+  # ingress {
+  #     from_port   = 8081
+  #     to_port     = 8081
+  #     protocol    = "tcp"
+  #     # Restrict ingress to necessary IPs/ports.
+  #     security_groups = aws_security_group.alb_sg.id
+  #     #cidr_blocks = ["0.0.0.0/0"]
+  # }
 
-   egress {
-       from_port   = 0
-       to_port     = 0
-       protocol    = "-1"
-       cidr_blocks = ["0.0.0.0/0"]
-   }
+  egress {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
   
    tags = {
        Name = "Allow SSH and HTTP"
@@ -245,12 +218,12 @@ resource "aws_security_group" "db_sg" {
        cidr_blocks = [aws_vpc.vpc.cidr_block]
    }
 
-   egress {
-       from_port   = 0
-       to_port     = 0
-       protocol    = "-1"
-       cidr_blocks = ["0.0.0.0/0"]
-   }
+  egress {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
   
    tags = {
        Name = "db_sg"
@@ -259,7 +232,6 @@ resource "aws_security_group" "db_sg" {
 
 resource "aws_security_group" "alb_sg" {
    name        = "alb_sg"
-   description = "Allow inbound SSH traffic from anywhere and http from the vpc"
    vpc_id      = "${aws_vpc.vpc.id}"
 
    # HTTP access - Traffic from internet
@@ -271,25 +243,62 @@ resource "aws_security_group" "alb_sg" {
        cidr_blocks = [aws_vpc.vpc.cidr_block]
    }
 
-  # Communication w Ec2 
-   egress {
-       from_port   = 8080
-       to_port     = 8080
-       protocol    = "tcp"
-       security_groups = aws_security_group.alb_sg.id
-   }
+  # # Communication w Ec2 
+  # egress {
+  #     from_port   = 8080
+  #     to_port     = 8080
+  #     protocol    = "tcp"
+  #     security_groups = aws_security_group.allow_ports.id
+  # }
    
-   #Port for the health check
-      egress {
-       from_port   = 8081
-       to_port     = 8081
-       protocol    = "tcp"
-       security_groups = aws_security_group.alb_sg.id
-   }
+  # #Port for the health check
+  #   egress {
+  #     from_port   = 8081
+  #     to_port     = 8081
+  #     protocol    = "tcp"
+  #     security_groups = aws_security_group.allow_ports.id
+  # }
   
    tags = {
        Name = "alb_sg"
    }
+}
+
+
+resource "aws_security_group_rule" "ingress_ec2_traffic" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.allow_ports.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+resource "aws_security_group_rule" "ingress_ec2_health_check" {
+  type                     = "ingress"
+  from_port                = 8081
+  to_port                  = 8081
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.allow_ports.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+resource "aws_security_group_rule" "egress_alb_traffic" {
+  type                     = "egress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.alb_sg.id
+  source_security_group_id = aws_security_group.allow_ports.id
+}
+
+resource "aws_security_group_rule" "egress_alb_health_check" {
+  type                     = "egress"
+  from_port                = 8081
+  to_port                  = 8081
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.alb_sg.id
+  source_security_group_id = aws_security_group.allow_ports.id
 }
 
 # Creating Target Group for public access
@@ -321,10 +330,10 @@ resource "aws_lb_target_group" "app_tg" {
 
 # Attechement of target group to webservers
 resource "aws_lb_target_group_attachment" "app_tg" {
-  for_each = aws_instance.webserver
+  count = 2
 
   target_group_arn = aws_lb_target_group.app_tg.arn
-  target_id        = aws_instance.webserver.*.id
+  target_id        = aws_instance.webserver[count.index].id
   port             = 8080
 }
 
@@ -336,7 +345,8 @@ resource "aws_lb" "app_alb" {
   security_groups    = [aws_security_group.alb_sg.id]
 
   subnets = [
-    aws_subnet.public.*.id
+    aws_subnet.public[0].id,
+    aws_subnet.public[1].id
   ]
 }
 
