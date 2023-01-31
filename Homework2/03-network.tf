@@ -220,65 +220,23 @@ resource "aws_security_group" "alb_sg" {
        to_port     = 80
        protocol    = "tcp"
        # Restrict ingress to necessary IPs/ports.
-       cidr_blocks = [aws_vpc.vpc.cidr_block]
+       cidr_blocks = ["0.0.0.0/0"]
    }
 
-  # egress {
-  #     from_port   = 80
-  #     to_port     = 80
-  #     protocol    = "tcp"
-  #     cidr_blocks = ["0.0.0.0/0"]
-  # }
+  
+  egress {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
+  
 
    tags = {
        Name = "alb_sg"
    }
 }
 
-resource "aws_security_group_rule" "egress_alb_http" {
-  type                     = "egress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.alb_sg.id
-  source_security_group_id = aws_security_group.allow_ports.id
-}
-
-# resource "aws_security_group_rule" "ingress_ec2_traffic" {
-#   type                     = "ingress"
-#   from_port                = 8080
-#   to_port                  = 8080
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.allow_ports.id
-#   source_security_group_id = aws_security_group.alb_sg.id
-# }
-
-# resource "aws_security_group_rule" "ingress_ec2_health_check" {
-#   type                     = "ingress"
-#   from_port                = 8081
-#   to_port                  = 8081
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.allow_ports.id
-#   source_security_group_id = aws_security_group.alb_sg.id
-# }
-
-# resource "aws_security_group_rule" "egress_alb_traffic" {
-#   type                     = "egress"
-#   from_port                = 8080
-#   to_port                  = 8080
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.alb_sg.id
-#   source_security_group_id = aws_security_group.allow_ports.id
-# }
-
-# resource "aws_security_group_rule" "egress_alb_health_check" {
-#   type                     = "egress"
-#   from_port                = 8081
-#   to_port                  = 8081
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.alb_sg.id
-#   source_security_group_id = aws_security_group.allow_ports.id
-# }
 
 # Creating Target Group for public access
 resource "aws_lb_target_group" "app_tg" {
@@ -300,7 +258,7 @@ resource "aws_lb_target_group" "app_tg" {
     port                = 80
     interval            = 30
     protocol            = "HTTP"
-    path                = "/health"
+    path                = "/"
     matcher             = "200"
     healthy_threshold   = 3
     unhealthy_threshold = 3

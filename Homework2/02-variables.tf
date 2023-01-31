@@ -1,9 +1,3 @@
-# variable "local_host_ip" {
-#   description = "the host of the admin- external ip"
-#   type = string
-#   default = "46.121.0.238/32"
-# }
-
 #TO DO cidr_block = “10.0.${(count.index + 1)}.0/24”
 
 variable "private_subnets" {
@@ -27,12 +21,6 @@ variable "instance_type" {
    description = "Type of AWS EC2 instance."
    default     = "t3.micro"
 }
-
-# #To DO
-# variable "public_key_path" {
-#   description = "Enter the path to the SSH Public Key to add to AWS."
-#   default     = "mnt/c/Users/hadar/.ssh/hadar-key.pem"
-# }
 
 variable "key_name" {
    description = "AWS key name"
