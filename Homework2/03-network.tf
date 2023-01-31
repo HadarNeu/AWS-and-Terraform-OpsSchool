@@ -74,11 +74,12 @@ resource "aws_nat_gateway" "nat" {
 
 // making two private route tables for two NAT addresses
 resource "aws_route_table" "private" {
+  depends_on = [aws_vpc.vpc]
   count = 2
   vpc_id = aws_vpc.vpc.id
 
   route = [
-    {
+      {
       cidr_block                 = "0.0.0.0/0"
       nat_gateway_id             = aws_nat_gateway.nat[count.index].id
       carrier_gateway_id         = ""
@@ -94,6 +95,7 @@ resource "aws_route_table" "private" {
       vpc_peering_connection_id  = ""
     },
   ]
+  
 
   tags = {
     Name = "private"
@@ -102,16 +104,17 @@ resource "aws_route_table" "private" {
 
 // one public route table
 resource "aws_route_table" "public" {
+  depends_on = [aws_vpc.vpc]
   vpc_id = aws_vpc.vpc.id
 
   route = [
-    {
+     {
       cidr_block                 = "0.0.0.0/0"
       gateway_id                 = aws_internet_gateway.igw.id
-      nat_gateway_id             = ""
       carrier_gateway_id         = ""
       destination_prefix_list_id = ""
       egress_only_gateway_id     = ""
+      gateway_id                 = ""
       instance_id                = ""
       ipv6_cidr_block            = ""
       local_gateway_id           = ""
@@ -119,8 +122,9 @@ resource "aws_route_table" "public" {
       transit_gateway_id         = ""
       vpc_endpoint_id            = ""
       vpc_peering_connection_id  = ""
-    },
-  ]
+      },
+    ]
+  
 
   tags = {
     Name = "public"
@@ -185,6 +189,26 @@ resource "aws_security_group" "allow_ports" {
        # Restrict ingress to necessary IPs/ports.
        cidr_blocks = ["0.0.0.0/0"]
    }
+   
+   # ingress from ALB traffic
+   ingress {
+       from_port   = 8080
+       to_port     = 8080
+       protocol    = "tcp"
+       # Restrict ingress to necessary IPs/ports.
+       security_groups = aws_security_group.alb_sg.id
+       #cidr_blocks = ["0.0.0.0/0"]
+   }
+   
+      # Health check from ALB 
+   ingress {
+       from_port   = 8081
+       to_port     = 8081
+       protocol    = "tcp"
+       # Restrict ingress to necessary IPs/ports.
+       security_groups = aws_security_group.alb_sg.id
+       #cidr_blocks = ["0.0.0.0/0"]
+   }
 
    egress {
        from_port   = 0
@@ -231,4 +255,104 @@ resource "aws_security_group" "db_sg" {
    tags = {
        Name = "db_sg"
    }
+}
+
+resource "aws_security_group" "alb_sg" {
+   name        = "alb_sg"
+   description = "Allow inbound SSH traffic from anywhere and http from the vpc"
+   vpc_id      = "${aws_vpc.vpc.id}"
+
+   # HTTP access - Traffic from internet
+   ingress {
+       from_port   = 80
+       to_port     = 80
+       protocol    = "tcp"
+       # Restrict ingress to necessary IPs/ports.
+       cidr_blocks = [aws_vpc.vpc.cidr_block]
+   }
+
+  # Communication w Ec2 
+   egress {
+       from_port   = 8080
+       to_port     = 8080
+       protocol    = "tcp"
+       security_groups = aws_security_group.alb_sg.id
+   }
+   
+   #Port for the health check
+      egress {
+       from_port   = 8081
+       to_port     = 8081
+       protocol    = "tcp"
+       security_groups = aws_security_group.alb_sg.id
+   }
+  
+   tags = {
+       Name = "alb_sg"
+   }
+}
+
+# Creating Target Group for public access
+resource "aws_lb_target_group" "app_tg" {
+  name       = "app-tg"
+  port       = 8080
+  protocol   = "HTTP"
+  vpc_id     = aws_vpc.vpc.id
+  slow_start = 0
+
+  load_balancing_algorithm_type = "round_robin"
+
+  stickiness {
+    enabled = false
+    type    = "lb_cookie"
+  }
+
+  health_check {
+    enabled             = true
+    port                = 8081
+    interval            = 30
+    protocol            = "HTTP"
+    path                = "/health"
+    matcher             = "200"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+}
+
+# Attechement of target group to webservers
+resource "aws_lb_target_group_attachment" "app_tg" {
+  for_each = aws_instance.webserver
+
+  target_group_arn = aws_lb_target_group.app_tg.arn
+  target_id        = aws_instance.webserver.*.id
+  port             = 8080
+}
+
+# Creating the actual Application Load Balancer
+resource "aws_lb" "app_alb" {
+  name               = "AppAlb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+
+  subnets = [
+    aws_subnet.public.*.id
+  ]
+}
+
+# A listener to recieve incoming traffic
+resource "aws_lb_listener" "app_listener" {
+  load_balancer_arn = aws_lb.app_alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app_tg.arn
+  }
+}
+
+output "lb_id" {
+  description = "The ID and ARN of the load balancer we created"
+  value       = try(aws_lb.app_alb.id, "")
 }
