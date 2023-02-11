@@ -31,3 +31,6 @@ variable "instance_count" {
    default = 2
 }
 
+variable "trying_tfc"{
+    default = "new line"
+}
