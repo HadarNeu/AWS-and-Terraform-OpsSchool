@@ -3,6 +3,12 @@ provider "aws" {
 }
 
 terraform {
+  cloud {
+    organization = “hadar-organization”
+    workspaces {
+      name = “AWS-and-Terraform-OpsSchool”
+    }
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
