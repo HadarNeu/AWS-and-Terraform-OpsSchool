@@ -4,9 +4,9 @@ provider "aws" {
 
 terraform {
   cloud {
-    organization = “hadar-organization”
+    organization = "hadar-organization"
     workspaces {
-      name = “AWS-and-Terraform-OpsSchool”
+      name = "AWS-and-Terraform-OpsSchool"
     }
   }
   required_providers {
