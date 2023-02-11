@@ -32,5 +32,6 @@ variable "instance_count" {
 }
 
 variable "trying_tfc"{
+    description = "trying the tfc trigger"
     default = "new line"
 }
