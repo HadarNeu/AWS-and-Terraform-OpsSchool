@@ -1,5 +1,3 @@
-#TO DO cidr_block = “10.0.${(count.index + 1)}.0/24”
-
 variable "private_subnets" {
   default = ["10.0.1.0/24", "10.0.2.0/24"]
 }
@@ -31,7 +29,6 @@ variable "instance_count" {
    default = 2
 }
 
-variable "trying_tfc"{
-    description = "trying the tfc trigger"
-    default = "new line"
+variable "bucket_name" {
+    default = "opsschool-homework3"
 }
